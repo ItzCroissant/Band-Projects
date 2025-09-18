@@ -1,1 +1,99 @@
-step into work mak
+import tkinter as tk
+import random
+
+# Timid responses
+greetings = [
+    "Oh, h-hi there...",
+    "U-um... hello.",
+    "H-hi... is it okay if I say hi?",
+]
+
+farewells = [
+    "O-oh, okay... goodbye then.",
+    "I-I guess it's time to go... b-bye...",
+    "T-thank you for talking to me... goodbye.",
+]
+
+uncertain_responses = [
+    "I-I think the answer might be... {}?",
+    "U-um, maybe it's... {}? But I’m not s-sure...",
+    "W-well, I heard it could be {}... b-but I could be wrong...",
+    "I-I’m sorry if I get this wrong, but maybe it's {}...",
+]
+
+confused_responses = [
+    "U-uhm... I-I don’t really know how to answer that...",
+    "S-sorry... I don’t understand...",
+    "T-that’s a bit too complicated for me... I’m s-sorry...",
+]
+
+# Knowledge base
+simple_knowledge = {
+    "your name": "I-I’m TimidBot... if that’s okay with you.",
+    "what is python": "Python is a programming language... I-I think.",
+    "how are you": "I-I’m okay... thank you for asking...",
+    "what is the capital of france": "I-it’s Paris... I think.",
+    "what do you do": "I-I try to help... if that's alright.",
+}
+
+# Generate timid responses
+def timid_response(user_input):
+    user_input = user_input.lower().strip(" ?.")
+
+    if user_input in ["hi", "hello", "hey"]:
+        return random.choice(greetings)
+    elif user_input in ["bye", "goodbye", "see you", "exit", "quit"]:
+        return random.choice(farewells)
+    elif user_input in simple_knowledge:
+        fact = simple_knowledge[user_input]
+        return random.choice(uncertain_responses).format(fact)
+    else:
+        return random.choice(confused_responses)
+
+# GUI code
+class TimidBotGUI:
+    def __init__(self, root):
+        self.root = root
+        self.root.title("🐭 TimidBot")
+
+        self.chat_log = tk.Text(root, bg="#f7f7f7", height=20, width=50, state=tk.DISABLED, wrap=tk.WORD)
+        self.chat_log.pack(padx=10, pady=10)
+
+        self.entry = tk.Entry(root, width=40)
+        self.entry.pack(side=tk.LEFT, padx=(10, 0), pady=(0, 10))
+        self.entry.bind("<Return>", self.send_message)
+
+        self.send_button = tk.Button(root, text="Send", command=self.send_message)
+        self.send_button.pack(side=tk.LEFT, padx=(5, 10), pady=(0, 10))
+
+        self.insert_bot_message("H-hi... I'm TimidBot. I-I'll try to help you... if that's okay.")
+
+    def insert_bot_message(self, message):
+        self.chat_log.config(state=tk.NORMAL)
+        self.chat_log.insert(tk.END, "TimidBot: " + message + "\n")
+        self.chat_log.config(state=tk.DISABLED)
+        self.chat_log.see(tk.END)
+
+    def insert_user_message(self, message):
+        self.chat_log.config(state=tk.NORMAL)
+        self.chat_log.insert(tk.END, "You: " + message + "\n")
+        self.chat_log.config(state=tk.DISABLED)
+        self.chat_log.see(tk.END)
+
+    def send_message(self, event=None):
+        user_input = self.entry.get().strip()
+        if not user_input:
+            return
+
+        self.insert_user_message(user_input)
+        response = timid_response(user_input)
+        self.insert_bot_message(response)
+        self.entry.delete(0, tk.END)
+
+
+# Run the app
+if __name__ == "__main__":
+    root = tk.Tk()
+    gui = TimidBotGUI(root)
+    root.mainloop()
+
