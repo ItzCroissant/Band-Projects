@@ -1,3 +1,27 @@
-jkky
-hello
-most def
+import os
+import google.generativeai as genai
+
+# Set your API key
+os.environ["API_KEY"] = "AIzaSyC9nbtX_E6fTmfDzW-QZhz2r8UjmCP6gz8"
+
+# Replace with your Google API key
+GOOGLE_API_KEY = "AIzaSyC9nbtX_E6fTmfDzW-QZhz2r8UjmCP6gz8"
+genai.configure(api_key=GOOGLE_API_KEY)
+
+# Load the Gemini model
+model = genai.GenerativeModel("gemini-pro")
+
+def chat_with_gemini(prompt):
+    try:
+        response = model.generate_content(prompt)
+        return response.text.strip()
+    except Exception as e:
+        return f"[Error]: {e}"
+
+if __name__ == "__main__":
+    while True:
+        user_input = input("You: ")
+        if user_input.lower() in ["quit", "exit", "bye"]:
+            break
+        response = chat_with_gemini(user_input)
+        print("Chatbot:", response)
