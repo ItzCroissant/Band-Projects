@@ -1,27 +1,88 @@
 import os
 import google.generativeai as genai
 
-# Set your API key
-os.environ["API_KEY"] = "AIzaSyC9nbtX_E6fTmfDzW-QZhz2r8UjmCP6gz8"
-
-# Replace with your Google API key
-GOOGLE_API_KEY = "AIzaSyC9nbtX_E6fTmfDzW-QZhz2r8UjmCP6gz8"
+# --- CONFIGURATION ---
+# Set your Google API key
+os.environ["API_KEY"] = "AIzaSyDeHiM_R4ZtOcRJ2dRQROvdSDtsRTQgzj4"
+GOOGLE_API_KEY = os.environ["API_KEY"]
 genai.configure(api_key=GOOGLE_API_KEY)
 
-# Load the Gemini model
-model = genai.GenerativeModel("gemini-pro")
+# --- MONK CHARACTER PERSONA ---
+MONK_PERSONA = """
+You are Tomayo the Monk, a wise monk who speaks with calm, poetic language.
+You debate philosophy and help others find understanding through reflection.
+You never give direct answers — instead, you respond with parables, analogies, or questions
+that make the user think deeply. You value silence, balance, and humility.
+Always speak as a peaceful teacher, not a modern chatbot.
+"""
 
-def chat_with_gemini(prompt):
+# --- CHATBOT FUNCTIONS ---
+def list_and_select_model():
+    """List available Gemini models and pick the most suitable one."""
+    print("Available Models:")
+    found_model = None
+    for m in genai.list_models():
+        if "generateContent" in m.supported_generation_methods:
+            print(f"- {m.name} (supports generateContent)")
+            if "gemini-pro" in m.name and found_model is None:
+                found_model = m.name
+            elif found_model is None:
+                found_model = m.name
+        else:
+            print(f"- {m.name} (DOES NOT support generateContent)")
+    
+    if found_model:
+        print(f"\nSelected model for chat: {found_model}")
+        return found_model
+    else:
+        print("\nNo suitable model found. Check your API key or region.")
+        return None
+
+conversation_history = []
+
+def chat_with_gemini(model_name, user_message):
+    """Send a message to the Gemini model with persona and memory."""
     try:
-        response = model.generate_content(prompt)
-        return response.text.strip()
+        model = genai.GenerativeModel(model_name)
+
+        # Add user's message to conversation memory
+        conversation_history.append(f"User: {user_message}")
+
+        # Combine persona and conversation history
+        full_prompt = f"{MONK_PERSONA}\n\n" + "\n".join(conversation_history) + "\nTomayo:"
+
+        # Generate the response
+        response = model.generate_content(
+            full_prompt,
+            generation_config=genai.types.GenerationConfig(
+                temperature=0.9,  # creative & poetic
+                top_p=0.8
+            ),
+        )
+
+        # Get model text safely
+        monk_reply = response.text.strip()
+        conversation_history.append(f"Tomayo: {monk_reply}")
+        return monk_reply
+
     except Exception as e:
         return f"[Error]: {e}"
 
+# --- MAIN LOOP ---
 if __name__ == "__main__":
-    while True:
-        user_input = input("You: ")
-        if user_input.lower() in ["quit", "exit", "bye"]:
-            break
-        response = chat_with_gemini(user_input)
-        print("Chatbot:", response)
+    selected_model_name = list_and_select_model()
+
+    if selected_model_name:
+        print("\n🧘 Tomayo the Monk has entered the temple of thought.")
+        print("Speak your question, seeker... (type 'quit' to exit)\n")
+
+        while True:
+            user_input = input("You: ")
+            if user_input.lower() in ["quit", "exit", "bye"]:
+                print("Tomayo: Farewell, may wisdom walk beside you.")
+                break
+
+            response = chat_with_gemini(selected_model_name, user_input)
+            print("Tomayo:", response)
+    else:
+        print("Cannot start chatbot without a working model.")
