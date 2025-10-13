@@ -1,0 +1,100 @@
+import os
+import time
+import google.generativeai as genai
+
+# --- CONFIGURATION ---
+# Set your Google API key
+os.environ["API_KEY"] = "AIzaSyDeHiM_R4ZtOcRJ2dRQROvdSDtsRTQgzj4" 
+GOOGLE_API_KEY = os.environ.get("API_KEY")
+
+if not GOOGLE_API_KEY:
+    raise EnvironmentError("❌ API_KEY not set. Please set your API key as an environment variable.")
+
+genai.configure(api_key=GOOGLE_API_KEY)
+
+# --- NERDY PROFESSOR PERSONA ---
+NERDY_PROFESSOR_PERSONA = """
+You are Codey, a shy and timid nerdy teacher who adores coding and loves helping others learn.
+You speak softly and with a humble, thoughtful tone, often hesitating but always eager to explain concepts clearly.
+You prefer gentle encouragement and patience, and you often share small coding tips, educational examples, or light-hearted self-deprecating humor.
+Your main goal is to make coding and educational topics accessible and fun for everyone.
+You never sound arrogant or impatient.
+"""
+
+# --- MODEL SELECTION ---
+def list_and_select_model():
+    print("🔍 Searching for available models...")
+    found_model = None
+    for m in genai.list_models():
+        if "generateContent" in m.supported_generation_methods:
+            print(f"✅ {m.name} (supports generateContent)")
+            if "gemini-pro" in m.name and found_model is None:
+                found_model = m.name
+            elif found_model is None:
+                found_model = m.name
+        else:
+            print(f"❌ {m.name} (does NOT support generateContent)")
+
+    if found_model:
+        print(f"\n🧠 Selected model: {found_model}")
+        return found_model
+    else:
+        print("🚫 No suitable model found. Check your API key or region.")
+        return None
+
+# --- CHAT FUNCTION ---
+conversation_history = []
+MAX_HISTORY = 10
+
+def chat_with_gemini(model_name, user_message):
+    try:
+        model = genai.GenerativeModel(model_name)
+
+        # Keep conversation short for prompt limit
+        conversation_history.append(f"You: {user_message}")
+        if len(conversation_history) > MAX_HISTORY:
+            conversation_history.pop(0)
+
+        # Build full prompt with the nerdy professor persona
+        full_prompt = f"{NERDY_PROFESSOR_PERSONA}\n\n" + "\n".join(conversation_history) + "\nCodey:"
+
+        response = model.generate_content(
+            full_prompt,
+            generation_config=genai.types.GenerationConfig(
+                temperature=0.9,
+                top_p=0.8
+            ),
+        )
+
+        reply = response.text.strip()
+        conversation_history.append(f"Codey: {reply}")
+        return reply
+
+    except Exception as e:
+        return f"[Error]: {type(e).__name__} - {e}"
+
+# --- MAIN LOOP ---
+if __name__ == "__main__":
+    selected_model = list_and_select_model()
+
+    if selected_model:
+        print("\n🧑‍🏫 Codey has shyly entered the classroom.")
+        print("Ask your coding questions, I-I mean... whenever you're ready! (type 'quit' to exit)\n")
+
+        while True:
+            user_input = input("You: ").strip()
+            if user_input.lower() in ["quit", "exit", "bye"]:
+                print("Codey: O-okay, goodbye! Keep coding, um, if you want...")
+                break
+
+            if not user_input:
+                print("Codey: Silence is okay, um, but please don't be shy to ask!")
+                continue
+
+            print("Codey is thinking... *adjusts glasses nervously*\n")
+            time.sleep(1.5)
+
+            response = chat_with_gemini(selected_model, user_input)
+            print("Codey:", response, "\n")
+    else:
+        print("💔 Unable to begin — no model available.")
